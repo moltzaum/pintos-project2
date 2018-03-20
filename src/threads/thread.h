@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <threads/synch.h>
 #include <threads/fixed-point.h>
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -97,11 +98,19 @@ struct thread
     int64_t thread_wake_tick;           /* The tick the thread should wake up on */
     
     struct list donators;
-    struct list_elem allelem;           /* all_list */
-    struct list_elem elem;              /* ready_list, sema->waiters */
     struct list_elem donor_elem;        /* donators */
     struct list_elem waiting_elem;      /* For use in timer_sleep */
     struct semaphore thread_sema;
+    
+    /* Shared between thread.c and synch.c. */
+    struct list_elem elem;              /* ready_list and for semaphores */
+    struct list_elem allelem;           /* all_list */
+    
+    //Turn this into a hash for algorithmic efficiency?
+    //Programmed using a list for now because we've done it before.
+    struct list children_list;
+    struct list_elem child_elem;        /* children_list */
+    struct semaphore dying_sema;
     
 #ifdef USERPROG
     /* Owned by userprog/process.c. */

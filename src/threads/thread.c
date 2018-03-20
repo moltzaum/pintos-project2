@@ -138,12 +138,12 @@ thread_tick (void)
     if (timer_ticks() % TIMER_FREQ == 0)
     {
       thread_foreach(&thread_recalc_recent_cpu, NULL);
-      recalc_load_avg (); 
+      recalc_load_avg ();
     }
 
     if (timer_ticks() % 4 == 0)
     {
-      thread_foreach(&thread_recalc_priority, NULL); 
+      thread_foreach(&thread_recalc_priority, NULL);
     }
     //intr_set_level (old_level);
   }
@@ -234,6 +234,9 @@ thread_create (const char *name, int priority,
   sf = alloc_frame (t, sizeof *sf);
   sf->eip = switch_entry;
   sf->ebp = 0;
+  
+  struct thread *tc = thread_current();
+  list_push_back (&tc->children_list, &t->child_elem);
   
   /* Add to run queue. */
   thread_unblock (t);
@@ -333,7 +336,7 @@ void
 thread_exit (void)
 {
   ASSERT (!intr_context ());
-
+  
 #ifdef USERPROG
   process_exit ();
 #endif
@@ -673,7 +676,13 @@ init_thread (struct thread *t, const char *name, int priority)
   //t->niceness = thread_current()->niceness;
   list_init (&t->donators);
   sema_init (&t->thread_sema, 0);
+  
+  list_init (&t->children_list);
+  sema_init (&t->dying_sema, 0);
+  
+  old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
+  intr_set_level (old_level);
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
