@@ -96,7 +96,6 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
-
   
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
@@ -121,6 +120,13 @@ thread_start (void)
 
   /* Wait for the idle thread to initialize idle_thread. */
   sema_down (&idle_started);
+}
+
+void thread_hash_init (void)
+{
+  ASSERT (intr_get_level () == INTR_OFF);
+  
+  keyed_hash_init (&thread_current ()->children_hash);
 }
 
 /* Called by the timer interrupt handler at each timer tick.
@@ -235,18 +241,6 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
   
-  /*
-  //Migrating this to process currently
-  printf ("About to insert.\n");
-  struct thread *tc = thread_current ();
-  printf ("%s is executing\n", tc->name);
-  //if (tc == NULL) printf ("tc is NULL\n");
-  if (t == NULL) printf ("t is NULL\n");
-  //if (&tc->children_hash == NULL) printf ("hash is NULL");
-  //hash_insert (&tc->children_hash, &t->hash_elem);
-  printf ("Done inserting.\n");
-  */
-  
   /* Add to run queue. */
   thread_unblock (t);
   
@@ -285,18 +279,16 @@ thread_block (void)
    update other data. */
 void
 thread_unblock (struct thread *t)
-{  
+{
+
   ASSERT (is_thread (t));
   ASSERT (t->status == THREAD_BLOCKED);
   
   enum intr_level old_level = intr_disable ();
   
-  if (thread_mlfqs)
-  {
+  if (thread_mlfqs) {
     list_push_back (&ready_list, &t->elem);
-  }
-  else
-  {
+  } else {
     list_insert_ordered (&ready_list, &t->elem, thread_priority_less, NULL);
   }
   
@@ -372,18 +364,15 @@ thread_yield (void)
   
   old_level = intr_disable ();
   
-  if (t != idle_thread)
-  {
-    if (thread_mlfqs)
-    {
+  if (t != idle_thread) {
+    if (thread_mlfqs) {
       list_push_back (&ready_list, &t->elem);
-    }
-    else
-    {
-    list_insert_ordered (&ready_list, &t->elem, thread_priority_less, NULL);
+    } else {
+      list_insert_ordered (&ready_list, &t->elem, thread_priority_less, NULL);
     }
   }
-  t->status = THREAD_READY;
+  cur->status = THREAD_READY;
+
   schedule ();
   intr_set_level (old_level);
 }
