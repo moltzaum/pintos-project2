@@ -15,6 +15,8 @@
 #include "devices/timer.h"
 #ifdef USERPROG
 #include "userprog/process.h"
+#include <keyed_hash.h>
+#include <hash.h>
 #endif
 
 /* Random value for struct thread's `magic' member.
@@ -125,7 +127,7 @@ thread_start (void)
 void thread_hash_init (void)
 {
   ASSERT (intr_get_level () == INTR_OFF);
-  
+  keyed_hash_init (&thread_current ()->open_files_hash);
   keyed_hash_init (&thread_current ()->children_hash);
 }
 
