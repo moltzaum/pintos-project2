@@ -128,7 +128,6 @@ struct thread
     int next_fd;
 
     struct hash open_files_hash;
-    struct list open_files;
     
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
