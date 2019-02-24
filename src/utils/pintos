@@ -254,7 +254,11 @@ sub set_disk {
 sub find_disks {
     # Find kernel, if we don't already have one.
     if (!exists $parts{KERNEL}) {
-	my $name = find_file ('/home/pintos/pintos/src/userprog/build/kernel.bin');
+  my $root = $ENV{PINTOS_ROOT};
+  my $dir = $ENV{PINTOS_SUB_DIR};
+  die "PINTOS_ROOT environment variable not set\n" if !defined $root;
+  die "PINTOS_SUB_DIR environment variable not set\n" if !defined $root;
+	my $name = find_file ("$root/src/$dir/build/kernel.bin");
 	die "Cannot find kernel\n" if !defined $name;
 	do_set_part ('KERNEL', 'file', $name);
     }
