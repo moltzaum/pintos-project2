@@ -55,11 +55,12 @@ static inline void *pg_round_down (const void *va) {
 
 /* Returns true if VADDR is a user virtual address. */
 static inline bool
-is_user_vaddr (const void *vaddr) 
+is_user_vaddr (const void *vaddr)
 {
   return vaddr < PHYS_BASE;
 }
 
+#ifdef USERPROG
 static inline bool
 is_mapped_user_vaddr (const void *vaddr)
 {
@@ -77,10 +78,11 @@ is_mapped_user_vaddr (const void *vaddr)
   void* bot = pagedir_get_page (t->pagedir, vaddr + 7);
   return (top && bot);
 }
+#endif
 
 /* Returns true if VADDR is a kernel virtual address. */
 static inline bool
-is_kernel_vaddr (const void *vaddr) 
+is_kernel_vaddr (const void *vaddr)
 {
   return vaddr >= PHYS_BASE;
 }

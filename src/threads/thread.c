@@ -128,7 +128,9 @@ void thread_hash_init (void)
 {
   ASSERT (intr_get_level () == INTR_OFF);
   keyed_hash_init (&thread_current ()->open_files_hash);
+#ifdef USERPROG
   keyed_hash_init (&thread_current ()->children_hash);
+#endif
 }
 
 /* Called by the timer interrupt handler at each timer tick.
@@ -373,7 +375,7 @@ thread_yield (void)
       list_insert_ordered (&ready_list, &t->elem, thread_priority_less, NULL);
     }
   }
-  cur->status = THREAD_READY;
+  t->status = THREAD_READY;
 
   schedule ();
   intr_set_level (old_level);
@@ -662,6 +664,8 @@ is_thread (struct thread *t)
 static void
 init_thread (struct thread *t, const char *name, int priority)
 {
+  enum intr_level old_level;
+
   ASSERT (t != NULL);
   ASSERT (PRI_MIN <= priority && priority <= PRI_MAX);
   ASSERT (name != NULL);
@@ -678,11 +682,13 @@ init_thread (struct thread *t, const char *name, int priority)
   sema_init (&t->thread_sema, 0);
   
   //Can't initialize hash table here, see start_process.
-  
+ 
+#ifdef USERPROG 
   sema_init (&t->dying_sema, 0);
   sema_init (&t->status_sema, 0);
   t->next_fd = 2;
-  
+#endif
+
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
