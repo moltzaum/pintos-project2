@@ -7,8 +7,8 @@ use Fcntl qw(SEEK_SET SEEK_CUR);
 sub fail;
 sub pass;
 
-die if @ARGV != 2;
-our ($test, $src_dir) = @ARGV;
+die if @ARGV != 1;
+our ($test) = @ARGV;
 
 my ($msg_file) = tempfile ();
 select ($msg_file);
@@ -604,7 +604,7 @@ sub finish {
     close (RESULT);
 
     if ($verdict eq 'PASS') {
-	print STDOUT "pass $test\n";
+	print STDOUT "PASS $test\n";
     } else {
 	print STDOUT "FAIL $test\n";
     }
