@@ -2,24 +2,89 @@
 # PINTOS-P1: THREADS -- ITEMIZED TESTING SCRIPT by Brian Sumner 2018
 # Updated Accordingly by Matthew and Michael
 
-# NOTE: To allow execution of this script, run the following command:
-#    chmod +x pintos-p1-tests.sh
 
 main () {
-    # -e flag to allow escape sequences
+    if [ -z "$PINTOS_ROOT" ]; then
+      echo
+      echo '$PINTOS_ROOT is not set. Set the variable before running this script.'
+      echo
+      exit 1
+    fi
+    
+    if [ -z "$PINTOS_SUB_DIR" ]; then
+      echo
+      echo '$PINTOS_SUB_DIR is not set. Set the variable before running this script.'
+      echo
+      exit 1
+    fi
+
+    # TODO: Include tests for all pintos projects, then try to make it more configurable
+    # with command line options. Having a configuration file that isn't tracked would
+    # be preferable.
+    # 
+    # The user should be able to trigger P1, P2, and P3 all as a whole or by specifying
+    # individual flags such as -mlfqs, and running tests by their name. I think I will
+    # need to support multiple PINTOS_SUB_DIRS, but I'm not sure. Right now I don't like
+    # the idea of running the P1 tests by having to set an environment variable for the
+    # subdir. I want the functionaility it provides though.
+    #
+    # Here is a rough idea of what I want:
+    #
+    # Run entire P1 suite with default build subdirectory 'threads' for P1, 'userprog' for P2, etc.
+    # > pintos-tests -P1
+    #
+    # Run P1, P2, and P3 suites each with their own subdirectory (requires 3 builds).
+    # > pintos-tests -P1 -P2 -P3
+    #
+    # Run the alarm single test. Auto-detect 'threads' build directory.
+    # > pintos-tests --run alarm-single
+    #
+    # Run the tests in order. Auto-detect each test's default build directory.
+    # > pintos-tests --run alarm-single alarm-multiple
+    #
+    # Run the tests with the userprog build directory. '--' must either have an option
+    # immediately after it, or else it separates the configuration from the tests. I'm
+    # undecided whether I catch redundant tests.
+    # > pintos-tests --env userprog -- -P1 --run alarm-single
+    #
+    # Run the specified tests from a file
+    # > pintos-tests -e threads -- -f my_tests.sh
+    #
+    # Note the following might be legal:
+    # > pintos-tests -f p1.sh p2.sh
+    #
+    # Or:
+    # > pintos-tests -e threads -- -f p2.sh
+    #
+    # Right now I have .sh to emphasize the content of the files, however they can be
+    # expressed differently.
+    #
+    # OPTIONS SUMMARY:
+    # -e, --environment
+    # -r, --run
+    # -P, --project
+    # -f, --file 
+    #   Single letter options may have values immediately after, whereas word options
+    #   should have a space after them. The --file option could help me define P1, P2,
+    #   and P3 and help me write reusable code.
+    #
+    # So far I don't have options for things like mlfqs or verbosity, but I think this
+    # is a good start.
+    # 
     echo -e "PINTOS-P1: THREADS -- ITEMIZED PASS/FAIL TESTING SCRIPT\n"
     echo -e "This script will build pintos and if successful, will execute the"
     echo -e "tests that are uncommented in this script.\n"
     
-    if [[ $1 == debug ]]; then 
+    if [[ "$1" == debug ]]; then 
       echo -e "You are using DEBUG mode. When a test boots up, it will wait for"
       echo -e "you to begin debugging from your other enviroment. When you"
       echo -e "continue in your program, the program will output here.\n"
     fi
-    
-    read -p "Press the [ENTER] key to continue, or [CTRL]+[C] to abort testing."
-    
-    cd /home/pintos/pintos/src/threads
+
+    echo -e "Press the [ENTER] key to continue, or [CTRL]+[C] to abort testing."
+    read -p ""
+   
+    cd $PINTOS_ROOT/src/$PINTOS_SUB_DIR
     make
     BUILD_SUCCESS=!$?
     
@@ -27,269 +92,90 @@ main () {
         
         cd build
         
-        #fixed_point_test
+        # Note: I can also specify a specific color to use
+        GREP_OPTIONS='--color=always'
+        FILTER=TEST
+        #filter by TEST or STATUS
+
+        run_test threads alarm-single       $FILTER
+        run_test threads alarm-multiple     $FILTER
+        run_test threads alarm-simultaneous $FILTER
+        run_test threads alarm-priority     $FILTER
+        run_test threads alarm-zero         $FILTER
+        run_test threads alarm-negative     $FILTER
         
-        #alarm_single
-        #alarm_multiple
-        #alarm-simultaneous
-        #alarm-priority
-        #alarm-zero
-        #alarm-negative
+        run_test threads priority-change            $FILTER
+        run_test threads priority-donate-one        $FILTER
+        run_test threads priority-donate-multiple   $FILTER
+        run_test threads priority-donate-multiple2  $FILTER
+        run_test threads priority-donate-nest       $FILTER
+        run_test threads priority-donate-sema       $FILTER
+        run_test threads priority-donate-lower      $FILTER
+        run_test threads priority-fifo              $FILTER
+        run_test threads priority-preempt           $FILTER
+        run_test threads priority-sema              $FILTER
+        run_test threads priority-condvar           $FILTER
+        run_test threads priority-donate-chain      $FILTER
+       
+        MLFQS=-mlfqs 
+        run_test threads mlfqs-load-1   $FILTER
+        run_test threads mlfqs-load-60  $FILTER
+        run_test threads mlfqs-load-avg $FILTER
+        run_test threads mlfqs-recent-1 $FILTER
+        run_test threads mlfqs-fair-2   $FILTER
+        run_test threads mlfqs-fair-20  $FILTER
+        run_test threads mlfqs-nice-2   $FILTER
+        run_test threads mlfqs-nice-10  $FILTER
+        run_test threads mlfqs-block    $FILTER
         
-        #priority-change
-        #priority-donate-one
-        #priority-donate-multiple
-        #priority-donate-multiple2
-        #priority-donate-nest
-        #priority-donate-sema
-        #priority-donate-lower
-        #priority-fifo
-        #priority-preempt
-        #priority-sema
-        #priority-condvar
-        #priority-donate-chain
-        
-        #mlfqs-load-1
-        #mlfqs-load-60
-        #mlfqs-load-avg
-        #mlfqs-recent-1
-        #mlfqs-fair-2
-        #mlfqs-fair-20
-        #mlfqs-nice-2
-        #mlfqs-nice-10
-        #mlfqs-block
-        
-        echo -e "\nScript execution terminated successfully."
+        echo "Script execution terminated successfully."
     else
         echo "Make build failed. No tests were run."
     fi
 }
 
-fixed_point_test() {
-    
-    echo -e "\nBooting pintos for test: fixed-point"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run fixed-point < /dev/null 2> tests/threads/fixed-point.errors |tee tests/threads/fixed-point.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/fixed-point.ck tests/threads/fixed-point tests/threads/fixed-point.result
+# Precondition: A build directory for the current scope exists and is the current pwd.
+# Verbose by default. Very easy to grep the output of this subroutine with either the
+# test name or PASS/FAIL to get more succinct output.
+# 
+# usage:   run_test <scope> <test-name> <grep-filter-type>
+# example: run_test threads alarm-multiple TEST
+# 
+run_test() {
+
+  if [ -z "$2" ]; then
+    echo "usage:   run_test <scope> <test> [filter]"
+    echo "example: run_test threads alarm-single"
+    exit
+  fi
+ 
+  # PASS/FAIL status filter 
+  if [ "$3" == STATUS ]; then
+    run_test $1 $2 | grep $GREP_OPTIONS -E '^(PASS|FAIL)'
+    return
+  fi
+ 
+  # Succient test output filter 
+  if [ "$3" == TEST ]; then
+    run_test $1 $2 | grep $GREP_OPTIONS $2
+    echo -e "\n"
+    return
+  fi
+
+  cd tests/$1
+  TEST=$2
+
+  # Runs pintos while directing stdout and stderr to expected files
+  echo "Booting pintos for test: $2"
+  pintos -v -k -T 60 --qemu $GDB -- -q $MLFQS run $2 < /dev/null 2> $TEST.errors | tee $TEST.output 
+
+  # Gets the status of the test 
+  PERL_MODULE=$PINTOS_ROOT/src 
+  EX=$PINTOS_ROOT/src/tests/$1/$TEST.ck
+  perl -I$PERL_MODULE $EX $TEST 
 }
 
-alarm_single() {
-    
-    echo -e "\nBooting pintos for test: alarm-single"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run alarm-single < /dev/null 2> tests/threads/alarm-single.errors |tee tests/threads/alarm-single.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/alarm-single.ck tests/threads/alarm-single tests/threads/alarm-single.result
-}
-
-alarm_multiple() {
-    
-    echo -e "\nBooting pintos for test: alarm-multiple"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run alarm-multiple < /dev/null 2> tests/threads/alarm-multiple.errors |tee tests/threads/alarm-multiple.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/alarm-multiple.ck tests/threads/alarm-multiple tests/threads/alarm-multiple.result
-}
-
-alarm-simultaneous() {
-    
-    echo -e "\nBooting pintos for test: alarm-simultaneous"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run alarm-simultaneous < /dev/null 2> tests/threads/alarm-simultaneous.errors |tee tests/threads/alarm-simultaneous.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/alarm-simultaneous.ck tests/threads/alarm-simultaneous tests/threads/alarm-simultaneous.result
-}
-
-alarm-priority() {
-    
-    echo -e "\nBooting pintos for test: alarm-priority"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run alarm-priority < /dev/null 2> tests/threads/alarm-priority.errors |tee tests/threads/alarm-priority.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/alarm-priority.ck tests/threads/alarm-priority tests/threads/alarm-priority.result
-}
-
-alarm-zero() {
-    
-    echo -e "\nBooting pintos for test: alarm-zero"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run alarm-zero < /dev/null 2> tests/threads/alarm-zero.errors |tee tests/threads/alarm-zero.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/alarm-zero.ck tests/threads/alarm-zero tests/threads/alarm-zero.result
-}
-
-alarm-negative() {
-    
-    echo -e "\nBooting pintos for test: alarm-negative"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run alarm-negative < /dev/null 2> tests/threads/alarm-negative.errors |tee tests/threads/alarm-negative.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/alarm-negative.ck tests/threads/alarm-negative tests/threads/alarm-negative.result
-}
-
-priority-change() {
-    
-    echo -e "\nBooting pintos for test: priority-change"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run priority-change < /dev/null 2> tests/threads/priority-change.errors |tee tests/threads/priority-change.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/priority-change.ck tests/threads/priority-change tests/threads/priority-change.result
-}
-
-priority-donate-one() {
-    
-    echo -e "\nBooting pintos for test: priority-donate-one"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run priority-donate-one < /dev/null 2> tests/threads/priority-donate-one.errors |tee tests/threads/priority-donate-one.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/priority-donate-one.ck tests/threads/priority-donate-one tests/threads/priority-donate-one.result
-}
-
-priority-donate-multiple() {
-    
-    echo -e "\nBooting pintos for test: priority-donate-multiple"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run priority-donate-multiple < /dev/null 2> tests/threads/priority-donate-multiple.errors |tee tests/threads/priority-donate-multiple.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/priority-donate-multiple.ck tests/threads/priority-donate-multiple tests/threads/priority-donate-multiple.result
-}
-
-priority-donate-multiple2() {
-    
-    echo -e "\nBooting pintos for test: priority-donate-multiple2"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run priority-donate-multiple2 < /dev/null 2> tests/threads/priority-donate-multiple2.errors |tee tests/threads/priority-donate-multiple2.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/priority-donate-multiple2.ck tests/threads/priority-donate-multiple2 tests/threads/priority-donate-multiple2.result
-}
-
-priority-donate-nest() {
-    
-    echo -e "\nBooting pintos for test: priority-donate-nest"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run priority-donate-nest < /dev/null 2> tests/threads/priority-donate-nest.errors |tee tests/threads/priority-donate-nest.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/priority-donate-nest.ck tests/threads/priority-donate-nest tests/threads/priority-donate-nest.result
-}
-
-priority-donate-sema() {
-    
-    echo -e "\nBooting pintos for test: priority-donate-sema"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run priority-donate-sema < /dev/null 2> tests/threads/priority-donate-sema.errors |tee tests/threads/priority-donate-sema.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/priority-donate-sema.ck tests/threads/priority-donate-sema tests/threads/priority-donate-sema.result
-}
-
-priority-donate-lower() {
-    
-    echo -e "\nBooting pintos for test: priority-donate-lower"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run priority-donate-lower < /dev/null 2> tests/threads/priority-donate-lower.errors |tee tests/threads/priority-donate-lower.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/priority-donate-lower.ck tests/threads/priority-donate-lower tests/threads/priority-donate-lower.result
-}
-
-priority-fifo() {
-    
-    echo -e "\nBooting pintos for test: priority-fifo"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run priority-fifo < /dev/null 2> tests/threads/priority-fifo.errors |tee tests/threads/priority-fifo.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/priority-fifo.ck tests/threads/priority-fifo tests/threads/priority-fifo.result
-}
-
-priority-preempt() {
-    
-    echo -e "\nBooting pintos for test: priority-preempt"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run priority-preempt < /dev/null 2> tests/threads/priority-preempt.errors |tee tests/threads/priority-preempt.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/priority-preempt.ck tests/threads/priority-preempt tests/threads/priority-preempt.result
-}
-
-priority-sema() {
-    
-    echo -e "\nBooting pintos for test: priority-sema"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run priority-sema < /dev/null 2> tests/threads/priority-sema.errors |tee tests/threads/priority-sema.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/priority-sema.ck tests/threads/priority-sema tests/threads/priority-sema.result
-}
-
-priority-condvar() {
-    
-    echo -e "\nBooting pintos for test: priority-condvar"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run priority-condvar < /dev/null 2> tests/threads/priority-condvar.errors |tee tests/threads/priority-condvar.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/priority-condvar.ck tests/threads/priority-condvar tests/threads/priority-condvar.result
-}
-
-priority-donate-chain() {
-    
-    echo -e "\nBooting pintos for test: priority-donate-chain"
-    pintos -v -k -T 60 --qemu $GDB -- -q  run priority-donate-chain < /dev/null 2> tests/threads/priority-donate-chain.errors |tee tests/threads/priority-donate-chain.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/priority-donate-chain.ck tests/threads/priority-donate-chain tests/threads/priority-donate-chain.result
-}
-
-mlfqs-load-1() {
-    
-    echo -e "\nBooting pintos for test: mlfqs-load-1"
-    pintos -v -k -T 480 --qemu $GDB -- -q -mlfqs run mlfqs-load-1 < /dev/null 2> tests/threads/mlfqs-load-1.errors |tee tests/threads/mlfqs-load-1.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/mlfqs-load-1.ck tests/threads/mlfqs-load-1 tests/threads/mlfqs-load-1.result
-}
-
-mlfqs-load-60() {
-    
-    echo -e "\nBooting pintos for test: mlfqs-load-60"
-    pintos -v -k -T 480 --qemu $GDB -- -q -mlfqs run mlfqs-load-60 < /dev/null 2> tests/threads/mlfqs-load-60.errors |tee tests/threads/mlfqs-load-60.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/mlfqs-load-60.ck tests/threads/mlfqs-load-60 tests/threads/mlfqs-load-60.result
-}
-
-mlfqs-load-avg() {
-    
-    echo -e "\nBooting pintos for test: mlfqs-load-avg"
-    pintos -v -k -T 480 --qemu $GDB -- -q -mlfqs run mlfqs-load-avg < /dev/null 2> tests/threads/mlfqs-load-avg.errors |tee tests/threads/mlfqs-load-avg.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/mlfqs-load-avg.ck tests/threads/mlfqs-load-avg tests/threads/mlfqs-load-avg.result
-}
-
-mlfqs-recent-1() {
-    
-    echo -e "\nBooting pintos for test: mlfqs-recent-1"
-    pintos -v -k -T 480 --qemu $GDB -- -q -mlfqs run mlfqs-recent-1 < /dev/null 2> tests/threads/mlfqs-recent-1.errors |tee tests/threads/mlfqs-recent-1.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/mlfqs-recent-1.ck tests/threads/mlfqs-recent-1 tests/threads/mlfqs-recent-1.result
-}
-
-mlfqs-fair-2() {
-    
-    echo -e "\nBooting pintos for test: mlfqs-fair-2"
-    pintos -v -k -T 480 --qemu $GDB -- -q -mlfqs run mlfqs-fair-2 < /dev/null 2> tests/threads/mlfqs-fair-2.errors |tee tests/threads/mlfqs-fair-2.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/mlfqs-fair-2.ck tests/threads/mlfqs-fair-2 tests/threads/mlfqs-fair-2.result
-}
-
-mlfqs-fair-20() {
-    
-    echo -e "\nBooting pintos for test: mlfqs-fair-20"
-    pintos -v -k -T 480 --qemu $GDB -- -q -mlfqs run mlfqs-fair-20 < /dev/null 2> tests/threads/mlfqs-fair-20.errors |tee tests/threads/mlfqs-fair-20.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/mlfqs-fair-20.ck tests/threads/mlfqs-fair-20 tests/threads/mlfqs-fair-20.result
-}
-
-mlfqs-nice-2() {
-    
-    echo -e "\nBooting pintos for test: mlfqs-nice-2"
-    pintos -v -k -T 480 --qemu $GDB -- -q -mlfqs run mlfqs-nice-2 < /dev/null 2> tests/threads/mlfqs-nice-2.errors |tee tests/threads/mlfqs-nice-2.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/mlfqs-nice-2.ck tests/threads/mlfqs-nice-2 tests/threads/mlfqs-nice-2.result
-}
-
-mlfqs-nice-10() {
-    
-    echo -e "\nBooting pintos for test: mlfqs-nice-10"
-    pintos -v -k -T 480 --qemu $GDB -- -q -mlfqs run mlfqs-nice-10 < /dev/null 2> tests/threads/mlfqs-nice-10.errors |tee tests/threads/mlfqs-nice-10.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/mlfqs-nice-10.ck tests/threads/mlfqs-nice-10 tests/threads/mlfqs-nice-10.result
-}
-
-mlfqs-block() {
-    
-    echo -e "\nBooting pintos for test: mlfqs-block"
-    pintos -v -k -T 480 --qemu $GDB -- -q -mlfqs run mlfqs-block < /dev/null 2> tests/threads/mlfqs-block.errors |tee tests/threads/mlfqs-block.output
-    echo -e "\nTest Status:"
-    perl -I../.. ../../tests/threads/mlfqs-block.ck tests/threads/mlfqs-block tests/threads/mlfqs-block.result
-}
-
-if [ $1 == debug ]; then
+if [ "$1" == debug ]; then
   GDB=--gdb
 fi
 main "$@"
